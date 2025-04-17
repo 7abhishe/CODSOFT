@@ -1,0 +1,41 @@
+private static final String FILE_NAME = "Patients.xlsx";
+
+    public static void loginPatient() {
+        Scanner sc = new Scanner(System.in);
+
+        System.out.print("Enter Patient ID: ");
+        String enteredId = sc.nextLine();
+
+        System.out.print("Enter Password: ");
+        String enteredPassword = sc.nextLine();
+
+        boolean loginSuccess = false;
+
+        try (FileInputStream fis = new FileInputStream(FILE_NAME);
+             Workbook workbook = new XSSFWorkbook(fis)) {
+
+            Sheet sheet = workbook.getSheetAt(0);
+
+            for (Row row : sheet) {
+                if (row.getRowNum() == 0) continue;
+
+                String id = row.getCell(0).getStringCellValue();
+                String password = row.getCell(4).getStringCellValue();
+
+                if (id.equals(enteredId) && password.equals(enteredPassword)) {
+                    loginSuccess = true;
+                    break;
+                }
+            }
+
+            if (loginSuccess) {
+                System.out.println("Login successful!");
+                // TODO: Call appointment booking menu next
+            } else {
+                System.out.println("Invalid ID or password.");
+            }
+
+        } catch (IOException e) {
+            System.out.println("Error reading patient data: " + e.getMessage());
+        }
+    }
