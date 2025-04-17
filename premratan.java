@@ -1,0 +1,97 @@
+private static final String FILE_NAME = "Patients.xlsx";
+
+    public static void registerPatient() {
+        Scanner sc = new Scanner(System.in);
+
+        System.out.print("Enter your name: ");
+        String name = sc.nextLine();
+
+        System.out.print("Enter your age: ");
+        int age = sc.nextInt();
+        sc.nextLine();
+        if (age <= 0 || age >= 120) {
+            System.out.println("Invalid age. Must be between 1 and 119.");
+            return;
+        }
+
+        System.out.print("Enter your phone number: ");
+        String phone = sc.nextLine();
+        if (!phone.matches("\\d{10}")) {
+            System.out.println("Invalid phone number. Must be 10 digits.");
+            return;
+        }
+
+        System.out.print("Create a password: ");
+        String password = sc.nextLine();
+        if (!isValidPassword(password)) {
+            System.out.println("Password must be 8-12 characters and contain at least:");
+            System.out.println("- One uppercase letter\n- One lowercase letter\n- One digit\n- One special character (@#&%*!)");
+            return;
+        }
+
+        try {
+            File file = new File(FILE_NAME);
+            Workbook workbook;
+            Sheet sheet;
+
+            if (!file.exists()) {
+                workbook = new XSSFWorkbook();
+                sheet = workbook.createSheet("Patients");
+
+                Row header = sheet.createRow(0);
+                header.createCell(0).setCellValue("PatientID");
+                header.createCell(1).setCellValue("Name");
+                header.createCell(2).setCellValue("Age");
+                header.createCell(3).setCellValue("Phone");
+                header.createCell(4).setCellValue("Password");
+            } else {
+                FileInputStream fis = new FileInputStream(file);
+                workbook = new XSSFWorkbook(fis);
+                sheet = workbook.getSheetAt(0);
+            }
+
+            if (isDuplicate(sheet, name, age, phone)) {
+                System.out.println("Patient already registered with same details.");
+                return;
+            }
+
+            String patientId = "PAT" + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+
+            int lastRow = sheet.getLastRowNum() + 1;
+            Row row = sheet.createRow(lastRow);
+            row.createCell(0).setCellValue(patientId);
+            row.createCell(1).setCellValue(name);
+            row.createCell(2).setCellValue(age);
+            row.createCell(3).setCellValue(phone);
+            row.createCell(4).setCellValue(password);
+
+            FileOutputStream fos = new FileOutputStream(FILE_NAME);
+            workbook.write(fos);
+            fos.close();
+            workbook.close();
+
+            System.out.println("Patient registered successfully. Your ID is: " + patientId);
+
+        } catch (IOException e) {
+            System.out.println("Error saving patient: " + e.getMessage());
+        }
+    }
+
+    private static boolean isDuplicate(Sheet sheet, String name, int age, String phone) {
+        for (Row row : sheet) {
+            if (row.getRowNum() == 0) continue;
+
+            String existingName = row.getCell(1).getStringCellValue();
+            int existingAge = (int) row.getCell(2).getNumericCellValue();
+            String existingPhone = row.getCell(3).getStringCellValue();
+
+            if (existingName.equalsIgnoreCase(name) && existingAge == age && existingPhone.equals(phone)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isValidPassword(String password) {
+        return password.matches("^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)(?=.*[@#&%*!])[A-Za-z\\d@#&%*!]{8,12}$");
+    }
