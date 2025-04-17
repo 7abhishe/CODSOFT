@@ -1,0 +1,207 @@
+private static final String DOCTORS_FILE = "Doctors.xlsx";
+    private static final String SLOTS_FILE = "DoctorSlots.xlsx";
+    private static final String APPOINTMENTS_FILE = "Appointments.xlsx";
+
+    public static void bookOrRescheduleAppointment(String patientId) {
+        Scanner sc = new Scanner(System.in);
+
+        System.out.println("Enter speciality you're looking for: ");
+        String speciality = sc.nextLine().toLowerCase();
+
+        List<String> doctorIds = getDoctorsBySpeciality(speciality);
+        if (doctorIds.isEmpty()) {
+            System.out.println("No doctors available with that speciality.");
+            return;
+        }
+
+        System.out.println("\nAvailable Doctors:");
+        for (String docId : doctorIds) {
+            System.out.println("- " + docId);
+        }
+
+        System.out.print("Select Doctor ID: ");
+        String selectedDocId = sc.nextLine();
+
+        if (!doctorIds.contains(selectedDocId)) {
+            System.out.println("Invalid doctor ID.");
+            return;
+        }
+
+        List<String> availableSlots = getAvailableSlots(selectedDocId);
+        if (availableSlots.isEmpty()) {
+            System.out.println("No slots available for selected doctor.");
+            return;
+        }
+
+        System.out.println("\nAvailable Slots:");
+        for (String slot : availableSlots) {
+            System.out.println("- " + slot);
+        }
+
+        System.out.print("Select slot (e.g., 2025-04-18 10:00–11:00): ");
+        String selectedSlot = sc.nextLine();
+
+        if (!availableSlots.contains(selectedSlot)) {
+            System.out.println("Invalid or already booked slot.");
+            return;
+        }
+
+        boolean alreadyBooked = checkIfAlreadyBooked(patientId);
+        if (alreadyBooked) {
+            if (checkIfAlreadyRescheduled(patientId)) {
+                System.out.println("❌ You have already rescheduled once. Cannot reschedule again.");
+                return;
+            }
+            System.out.println("⚠️ Rescheduling your appointment...");
+            updateAppointment(patientId, selectedDocId, selectedSlot, true);
+        } else {
+            addAppointment(patientId, selectedDocId, selectedSlot);
+        }
+
+        System.out.println("✅ Appointment confirmed for slot: " + selectedSlot);
+    }
+
+    private static List<String> getDoctorsBySpeciality(String speciality) {
+        List<String> ids = new ArrayList<>();
+        try (FileInputStream fis = new FileInputStream(DOCTORS_FILE);
+             Workbook workbook = new XSSFWorkbook(fis)) {
+            Sheet sheet = workbook.getSheetAt(0);
+            for (Row row : sheet) {
+                if (row.getRowNum() == 0) continue;
+                String docSpeciality = row.getCell(3).getStringCellValue().toLowerCase();
+                if (docSpeciality.equals(speciality)) {
+                    ids.add(row.getCell(0).getStringCellValue());
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("Error reading doctors: " + e.getMessage());
+        }
+        return ids;
+    }
+
+    private static List<String> getAvailableSlots(String docId) {
+        List<String> available = new ArrayList<>();
+        Set<String> booked = new HashSet<>();
+        try (FileInputStream slotFis = new FileInputStream(SLOTS_FILE);
+             FileInputStream appointFis = new FileInputStream(APPOINTMENTS_FILE);
+             Workbook slotWb = new XSSFWorkbook(slotFis);
+             Workbook appointWb = new XSSFWorkbook(appointFis)) {
+
+            Sheet slotSheet = slotWb.getSheetAt(0);
+            Sheet appointSheet = appointWb.getSheetAt(0);
+
+            for (Row r : appointSheet) {
+                if (r.getRowNum() == 0) continue;
+                if (r.getCell(2).getStringCellValue().equals(docId)) {
+                    booked.add(r.getCell(3).getStringCellValue());
+                }
+            }
+
+            for (Row row : slotSheet) {
+                if (row.getRowNum() == 0) continue;
+                if (row.getCell(0).getStringCellValue().equals(docId)) {
+                    String fullSlot = row.getCell(1).getStringCellValue() + " " + row.getCell(2).getStringCellValue();
+                    if (!booked.contains(fullSlot)) {
+                        available.add(fullSlot);
+                    }
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("Error loading slots: " + e.getMessage());
+        }
+        return available;
+    }
+
+    private static boolean checkIfAlreadyBooked(String patientId) {
+        try (FileInputStream fis = new FileInputStream(APPOINTMENTS_FILE);
+             Workbook workbook = new XSSFWorkbook(fis)) {
+            Sheet sheet = workbook.getSheetAt(0);
+            for (Row r : sheet) {
+                if (r.getRowNum() == 0) continue;
+                if (r.getCell(1).getStringCellValue().equals(patientId)) {
+                    return true;
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("Error reading appointments.");
+        }
+        return false;
+    }
+
+    private static boolean checkIfAlreadyRescheduled(String patientId) {
+        try (FileInputStream fis = new FileInputStream(APPOINTMENTS_FILE);
+             Workbook workbook = new XSSFWorkbook(fis)) {
+            Sheet sheet = workbook.getSheetAt(0);
+            for (Row r : sheet) {
+                if (r.getRowNum() == 0) continue;
+                if (r.getCell(1).getStringCellValue().equals(patientId)) {
+                    return r.getCell(4) != null && r.getCell(4).getBooleanCellValue();
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("Error reading appointments.");
+        }
+        return false;
+    }
+
+    private static void updateAppointment(String patientId, String docId, String newSlot, boolean isRescheduled) {
+        try (FileInputStream fis = new FileInputStream(APPOINTMENTS_FILE);
+             Workbook workbook = new XSSFWorkbook(fis)) {
+            Sheet sheet = workbook.getSheetAt(0);
+
+            for (Row r : sheet) {
+                if (r.getRowNum() == 0) continue;
+                if (r.getCell(1).getStringCellValue().equals(patientId)) {
+                    r.getCell(2).setCellValue(docId);
+                    r.getCell(3).setCellValue(newSlot);
+                    r.createCell(4).setCellValue(isRescheduled);
+                    break;
+                }
+            }
+
+            FileOutputStream fos = new FileOutputStream(APPOINTMENTS_FILE);
+            workbook.write(fos);
+            fos.close();
+        } catch (IOException e) {
+            System.out.println("Error updating appointment.");
+        }
+    }
+
+    private static void addAppointment(String patientId, String docId, String slot) {
+        try {
+            File file = new File(APPOINTMENTS_FILE);
+            Workbook workbook;
+            Sheet sheet;
+
+            if (!file.exists()) {
+                workbook = new XSSFWorkbook();
+                sheet = workbook.createSheet("Appointments");
+                Row header = sheet.createRow(0);
+                header.createCell(0).setCellValue("AppointmentID");
+                header.createCell(1).setCellValue("PatientID");
+                header.createCell(2).setCellValue("DoctorID");
+                header.createCell(3).setCellValue("Slot");
+                header.createCell(4).setCellValue("Rescheduled");
+            } else {
+                FileInputStream fis = new FileInputStream(file);
+                workbook = new XSSFWorkbook(fis);
+                sheet = workbook.getSheetAt(0);
+            }
+
+            int lastRow = sheet.getLastRowNum() + 1;
+            Row row = sheet.createRow(lastRow);
+            row.createCell(0).setCellValue("APT" + UUID.randomUUID().toString().substring(0, 6));
+            row.createCell(1).setCellValue(patientId);
+            row.createCell(2).setCellValue(docId);
+            row.createCell(3).setCellValue(slot);
+            row.createCell(4).setCellValue(false);
+
+            FileOutputStream fos = new FileOutputStream(APPOINTMENTS_FILE);
+            workbook.write(fos);
+            fos.close();
+            workbook.close();
+
+        } catch (IOException e) {
+            System.out.println("Error writing appointment: " + e.getMessage());
+        }
+    }
