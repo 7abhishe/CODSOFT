@@ -1,0 +1,122 @@
+import java.io.*;
+import java.util.*;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.*;
+
+public class BookAppointment {
+
+    private static final String FILE_NAME = "Appointments.xlsx";
+    private static final String[] SLOTS = {"10–11 AM", "11–12 PM", "4–5 PM", "5–6 PM"};
+
+    public static void bookAppointment() {
+        Scanner sc = new Scanner(System.in);
+
+        System.out.print("Enter your Patient ID: ");
+        String patientId = sc.nextLine().trim();
+
+        System.out.print("Enter Doctor ID: ");
+        String doctorId = sc.nextLine().trim();
+
+        // Show slots
+        System.out.println("Available slots:");
+        for (int i = 0; i < SLOTS.length; i++) {
+            System.out.println((i + 1) + ". " + SLOTS[i]);
+        }
+
+        System.out.print("Choose a slot (1-4): ");
+        int slotChoice = sc.nextInt();
+        sc.nextLine();
+
+        if (slotChoice < 1 || slotChoice > 4) {
+            System.out.println("Invalid slot choice.");
+            return;
+        }
+
+        String selectedSlot = SLOTS[slotChoice - 1];
+
+        // Check if the slot is already booked
+        if (isSlotBooked(doctorId, selectedSlot)) {
+            System.out.println("❌ Slot already booked for this doctor. Please choose another.");
+            return;
+        }
+
+        String appointmentId = generateAppointmentId();
+
+        try {
+            File file = new File(FILE_NAME);
+            Workbook workbook;
+            Sheet sheet;
+
+            if (!file.exists()) {
+                workbook = new XSSFWorkbook();
+                sheet = workbook.createSheet("Appointments");
+                Row header = sheet.createRow(0);
+                header.createCell(0).setCellValue("AppointmentID");
+                header.createCell(1).setCellValue("PatientID");
+                header.createCell(2).setCellValue("DoctorID");
+                header.createCell(3).setCellValue("Slot");
+                header.createCell(4).setCellValue("Status");
+            } else {
+                FileInputStream fis = new FileInputStream(file);
+                workbook = new XSSFWorkbook(fis);
+                sheet = workbook.getSheetAt(0);
+            }
+
+            int rowNum = sheet.getLastRowNum() + 1;
+            Row row = sheet.createRow(rowNum);
+            row.createCell(0).setCellValue(appointmentId);
+            row.createCell(1).setCellValue(patientId);
+            row.createCell(2).setCellValue(doctorId);
+            row.createCell(3).setCellValue(selectedSlot);
+            row.createCell(4).setCellValue("Booked");
+
+            FileOutputStream fos = new FileOutputStream(FILE_NAME);
+            workbook.write(fos);
+            fos.close();
+            workbook.close();
+
+            System.out.println("✅ Appointment booked successfully with ID: " + appointmentId);
+
+        } catch (IOException e) {
+            System.out.println("❌ Error booking appointment: " + e.getMessage());
+        }
+    }
+
+    private static boolean isSlotBooked(String doctorId, String slot) {
+        try {
+            FileInputStream fis = new FileInputStream(FILE_NAME);
+            Workbook workbook = new XSSFWorkbook(fis);
+            Sheet sheet = workbook.getSheetAt(0);
+
+            for (Row row : sheet) {
+                if (row.getRowNum() == 0) continue;
+
+                String existingDoctorId = row.getCell(2).getStringCellValue().trim();
+                String existingSlot = row.getCell(3).getStringCellValue().trim();
+
+                if (existingDoctorId.equals(doctorId) && existingSlot.equals(slot)) {
+                    return true;
+                }
+            }
+
+            workbook.close();
+        } catch (IOException e) {
+            return false;
+        }
+
+        return false;
+    }
+
+    private static String generateAppointmentId() {
+        int count = 1;
+        try {
+            FileInputStream fis = new FileInputStream(FILE_NAME);
+            Workbook workbook = new XSSFWorkbook(fis);
+            Sheet sheet = workbook.getSheetAt(0);
+            count = sheet.getLastRowNum() + 1;
+            workbook.close();
+        } catch (IOException ignored) {
+        }
+        return "APT" + String.format("%03d", count);
+    }
+}
