@@ -1,0 +1,26 @@
+private static String generateNextDoctorId() {
+    int maxId = 0;
+
+    try (FileInputStream fis = new FileInputStream(FILE_NAME);
+         Workbook workbook = new XSSFWorkbook(fis)) {
+
+        Sheet sheet = workbook.getSheetAt(0);
+
+        for (Row row : sheet) {
+            if (row.getRowNum() == 0) continue; // skip header
+
+            String idCell = row.getCell(0).getStringCellValue(); // e.g., "DOC007"
+            if (idCell.startsWith("DOC")) {
+                int num = Integer.parseInt(idCell.substring(3));
+                if (num > maxId) {
+                    maxId = num;
+                }
+            }
+        }
+
+    } catch (IOException e) {
+        // No file yet? First doctor. Start from 0.
+    }
+
+    return String.format("DOC%03d", maxId + 1);
+}
