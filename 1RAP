@@ -1,0 +1,79 @@
+import java.io.*;
+import java.util.*;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.*;
+
+public class RescheduleAppointment {
+
+    private static final String FILE_NAME = "Appointments.xlsx";
+    private static final String[] AVAILABLE_SLOTS = {
+        "10-11 AM", "11-12 PM", "4-5 PM", "5-6 PM"
+    };
+
+    public static void rescheduleAppointment(String patientId) {
+        try {
+            File file = new File(FILE_NAME);
+            if (!file.exists()) {
+                System.out.println("No appointments found.");
+                return;
+            }
+
+            FileInputStream fis = new FileInputStream(file);
+            Workbook workbook = new XSSFWorkbook(fis);
+            Sheet sheet = workbook.getSheetAt(0);
+            boolean found = false;
+
+            for (Row row : sheet) {
+                if (row.getRowNum() == 0) continue; // skip header
+                Cell patientCell = row.getCell(1);
+                if (patientCell.getStringCellValue().equals(patientId)) {
+                    String rescheduled = row.getCell(4).getStringCellValue();
+                    if ("Yes".equalsIgnoreCase(rescheduled)) {
+                        System.out.println("You have already rescheduled once. Cannot reschedule again.");
+                        workbook.close();
+                        fis.close();
+                        return;
+                    }
+
+                    System.out.println("Available Slots:");
+                    for (int i = 0; i < AVAILABLE_SLOTS.length; i++) {
+                        System.out.println((i + 1) + ") " + AVAILABLE_SLOTS[i]);
+                    }
+
+                    Scanner sc = new Scanner(System.in);
+                    System.out.print("Choose a new slot (1-4): ");
+                    int slotChoice = sc.nextInt();
+                    sc.nextLine(); // consume newline
+
+                    if (slotChoice < 1 || slotChoice > 4) {
+                        System.out.println("Invalid slot choice.");
+                        workbook.close();
+                        fis.close();
+                        return;
+                    }
+
+                    String newSlot = AVAILABLE_SLOTS[slotChoice - 1];
+                    row.getCell(3).setCellValue(newSlot); // update slot
+                    row.getCell(4).setCellValue("Yes");   // mark rescheduled
+
+                    fis.close();
+                    FileOutputStream fos = new FileOutputStream(FILE_NAME);
+                    workbook.write(fos);
+                    fos.close();
+                    workbook.close();
+
+                    System.out.println("Appointment rescheduled successfully to: " + newSlot);
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found) {
+                System.out.println("No appointment found for this patient ID.");
+            }
+
+        } catch (IOException e) {
+            System.out.println("Error during rescheduling: " + e.getMessage());
+        }
+    }
+}
