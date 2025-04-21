@@ -1,0 +1,17 @@
+Using ancestor and descendant 
+//input[@id='checkin']/ancestor::form
+  Find a sibling input 
+//input[@id='checkin']/following::input[@id='checkout']
+
+
+
+Find the descendent 
+
+//div[@id='hotels-search']//descendant::svg
+
+From its parent id using descendent 
+//div[@id='hotels-search']//descendant::div[2]/svg
+
+From its parent child axes 
+
+//div[@id='hotels-search']//child::div/div/div[2]/svg
