@@ -1,0 +1,22 @@
+String mostExpensiveProduct = productPage.removeMostExpensiveProduct();
+
+        // Step 3: Verify 'Add to Cart' button is visible again
+        boolean isAddToCartVisible = productPage.isAddToCartVisible(mostExpensiveProduct);
+        Assert.assertTrue(isAddToCartVisible, "Add to Cart button should be visible after removal.");
+
+        // Step 4: Click on 'Add to Cart' again
+        productPage.addProductToCart(mostExpensiveProduct);
+
+        // Step 5: Click on Cart icon
+        cartPage.openCart();
+
+        // Step 6: Verify product is present in the cart
+        boolean isProductInCart = cartPage.isProductInCart(mostExpensiveProduct);
+        Assert.assertTrue(isProductInCart, "Product should be present in the cart.");
+
+        // Step 7: Click on Continue Shopping
+        cartPage.clickContinueShopping();
+
+        // Optional: Verify that we're back to the product list (this can be customized)
+        boolean isBackToProducts = homePage.isProductListVisible();
+        Assert.assertTrue(isBackToProducts, "Should be back to the product list page.");
