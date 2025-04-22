@@ -1,0 +1,44 @@
+package MiniAssignment2;
+
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.testng.annotations.DataProvider;
+
+import java.io.InputStream;
+import java.util.Iterator;
+
+public class ExcelDataProvider {
+
+    @DataProvider(name = "loginData")
+    public Object[][] excelDataProvider() throws Exception {
+        // Load the Excel file from resources
+        InputStream inputStream = getClass().getClassLoader().getResourceAsStream("UserLoginData.xlsx");
+
+        if (inputStream == null) {
+            throw new RuntimeException("Excel file not found in resources!");
+        }
+
+        Workbook workbook = new XSSFWorkbook(inputStream);
+        Sheet sheet = workbook.getSheet("Details");
+
+        int rowCount = sheet.getPhysicalNumberOfRows() - 1; // excluding header
+        Object[][] data = new Object[rowCount][2];
+
+        Iterator<Row> rowIterator = sheet.iterator();
+        rowIterator.next(); // Skip header row
+
+        int i = 0;
+        while (rowIterator.hasNext()) {
+            Row row = rowIterator.next();
+            Cell userCell = row.getCell(0);
+            Cell passCell = row.getCell(1);
+
+            data[i][0] = userCell.getStringCellValue();
+            data[i][1] = passCell.getStringCellValue();
+            i++;
+        }
+
+        workbook.close();
+        return data;
+    }
+}
