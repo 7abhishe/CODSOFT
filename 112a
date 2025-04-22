@@ -1,0 +1,91 @@
+//home page
+
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+
+public class HomePage {
+    private WebDriver driver;
+
+    public HomePage(WebDriver driver) {
+        this.driver = driver;
+    }
+
+    public void login(String username, String password) {
+        WebElement usernameField = driver.findElement(By.id("user-name"));
+        WebElement passwordField = driver.findElement(By.id("password"));
+        WebElement loginButton = driver.findElement(By.id("login-button"));
+
+        usernameField.sendKeys(username);
+        passwordField.sendKeys(password);
+        loginButton.click();
+    }
+
+    public boolean isProductListVisible() {
+        WebElement productList = driver.findElement(By.className("inventory_list"));
+        return productList.isDisplayed();
+    }
+}
+
+//product page
+
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+
+public class ProductPage {
+    private WebDriver driver;
+
+    public ProductPage(WebDriver driver) {
+        this.driver = driver;
+    }
+
+    public String removeMostExpensiveProduct() {
+        // Logic to find the most expensive product and click remove
+        WebElement mostExpensiveProduct = driver.findElement(By.cssSelector(".inventory_item_price"));
+        String productName = mostExpensiveProduct.getText(); // Get the product name or price
+        driver.findElement(By.cssSelector(".inventory_item_remove")).click();
+        return productName;
+    }
+
+    public boolean isAddToCartVisible(String productName) {
+        // Check if 'Add to Cart' button is visible for the product
+        WebElement addToCartButton = driver.findElement(By.xpath("//button[contains(@class, 'btn_inventory') and contains(text(), 'Add to cart')]"));
+        return addToCartButton.isDisplayed();
+    }
+
+    public void addProductToCart(String productName) {
+        // Add product to cart logic
+        WebElement addToCartButton = driver.findElement(By.xpath("//button[contains(@class, 'btn_inventory') and contains(text(), 'Add to cart')]"));
+        addToCartButton.click();
+    }
+}
+
+//cart page
+
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+
+public class CartPage {
+    private WebDriver driver;
+
+    public CartPage(WebDriver driver) {
+        this.driver = driver;
+    }
+
+    public void openCart() {
+        WebElement cartIcon = driver.findElement(By.className("shopping_cart_link"));
+        cartIcon.click();
+    }
+
+    public boolean isProductInCart(String productName) {
+        WebElement cartItem = driver.findElement(By.xpath("//div[@class='cart_item']//div[@class='inventory_item_name' and text()='" + productName + "']"));
+        return cartItem.isDisplayed();
+    }
+
+    public void clickContinueShopping() {
+        WebElement continueShoppingButton = driver.findElement(By.id("continue-shopping"));
+        continueShoppingButton.click();
+    }
+}
