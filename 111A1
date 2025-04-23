@@ -62,3 +62,71 @@ public class Scenario3Test extends BaseTest {
         driver.quit();
     }
 }
+
+
+//checkout page
+
+package pages;
+
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
+
+public class CheckoutPage {
+    WebDriver driver;
+
+    private By firstNameField = By.id("first-name");
+    private By lastNameField = By.id("last-name");
+    private By zipCodeField = By.id("postal-code");
+    private By continueButton = By.id("continue");
+
+    public CheckoutPage(WebDriver driver) {
+        this.driver = driver;
+    }
+
+    public void enterUserInfo(String firstName, String lastName, String zip) {
+        driver.findElement(firstNameField).sendKeys(firstName);
+        driver.findElement(lastNameField).sendKeys(lastName);
+        driver.findElement(zipCodeField).sendKeys(zip);
+    }
+
+    public void clickContinue() {
+        driver.findElement(continueButton).click();
+    }
+}
+
+//checkoutoveerviewpage
+
+package pages;
+
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
+
+public class CheckoutOverviewPage {
+    WebDriver driver;
+
+    private By overviewTitle = By.xpath("//span[text()='Checkout: Overview']");
+    private By finishButton = By.id("finish");
+    private By successMessage = By.className("complete-header");
+
+    public CheckoutOverviewPage(WebDriver driver) {
+        this.driver = driver;
+    }
+
+    public void verifyOverviewPage() {
+        assert driver.findElement(overviewTitle).isDisplayed() : "Overview page not displayed";
+    }
+
+    public void verifyTotalAmount() {
+        // You can extend this to verify exact amounts.
+        // For simplicity, we're assuming the presence of a total label.
+        assert driver.getPageSource().contains("Total") : "Total amount not shown";
+    }
+
+    public void clickFinish() {
+        driver.findElement(finishButton).click();
+    }
+
+    public void verifySuccessMessage() {
+        assert driver.findElement(successMessage).getText().contains("Thank you for your order!");
+    }
+}
