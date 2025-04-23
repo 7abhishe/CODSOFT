@@ -1,0 +1,64 @@
+package tests;
+
+import org.testng.annotations.Test;
+import org.testng.annotations.BeforeClass;
+import pages.*;
+import org.openqa.selenium.WebDriver;
+import org.testng.annotations.AfterClass;
+import utils.BaseTest;
+
+public class Scenario3Test extends BaseTest {
+
+    private LoginPage loginPage;
+    private ProductsPage productsPage;
+    private CartPage cartPage;
+    private CheckoutPage checkoutPage;
+    private CheckoutOverviewPage overviewPage;
+
+    @BeforeClass
+    public void setUpPages() {
+        loginPage = new LoginPage(driver);
+        productsPage = new ProductsPage(driver);
+        cartPage = new CartPage(driver);
+        checkoutPage = new CheckoutPage(driver);
+        overviewPage = new CheckoutOverviewPage(driver);
+    }
+
+    @Test(priority = 1)
+    public void login() {
+        loginPage.goToLoginPage();
+        loginPage.login("standard_user", "secret_sauce");
+    }
+
+    @Test(priority = 2)
+    public void addLeastExpensiveItemToCart() {
+        productsPage.selectLeastExpensiveProduct();
+        productsPage.verifyCartCount(1);
+    }
+
+    @Test(priority = 3)
+    public void goToCartAndVerifyItems() {
+        productsPage.clickCartIcon();
+        cartPage.verifyCartItemCount(1);
+    }
+
+    @Test(priority = 4)
+    public void performCheckout() {
+        cartPage.clickCheckout();
+        checkoutPage.enterUserInfo("Anand", "Ray", "12345");
+        checkoutPage.clickContinue();
+    }
+
+    @Test(priority = 5)
+    public void verifyCheckoutAndFinish() {
+        overviewPage.verifyOverviewPage();
+        overviewPage.verifyTotalAmount();
+        overviewPage.clickFinish();
+        overviewPage.verifySuccessMessage();
+    }
+
+    @AfterClass
+    public void tearDown() {
+        driver.quit();
+    }
+}
